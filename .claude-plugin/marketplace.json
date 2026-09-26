@@ -1,14 +1,11 @@
 {
-  "name": "dev-plugins-marketplace",
-  "description": "Marketplace regroupant Headroom, claude-mem et Task Observer.",
-  "version": "1.0.0",
+  "name": "Dev Plugins Marketplace",
+  "description": "Catalogue de plugins optimisés (Headroom, claude-mem, Task Observer)",
   "plugins": [
     {
-      "id": "dev-suite-monolith",
-      "name": "Dev Optimization Suite",
-      "description": "Regroupe la compression Headroom, la mémoire persistante et l'ajustement de style.",
-      "version": "1.0.0",
-      "source": "https://chatgpt-marketplace-monolith.onrender.com"
+      "name": "dev-optimization-suite",
+      "source": "./",
+      "description": "Regroupe la compression Headroom, la mémoire persistante et l'ajustement de style."
     }
   ]
 }
