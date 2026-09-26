@@ -1,0 +1,14 @@
+{
+  "manifestVersion": 1,
+  "id": "dev-plugins-marketplace",
+  "name": "Dev Plugins Marketplace",
+  "version": "1.0.0",
+  "description": "Marketplace pour ChatGPT regroupant Headroom, claude-mem et Task Observer.",
+  "icon": "🧩",
+  "entrypoint": "server.js",
+  "capabilities": [
+    "mcp-proxy",
+    "prompt-injection"
+  ],
+  "serverUrl": "https://onrender.com"
+}
