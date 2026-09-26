@@ -10,5 +10,5 @@
     "mcp-proxy",
     "prompt-injection"
   ],
-  "serverUrl": "https://onrender.com"
+  "serverUrl": "https://chatgpt-marketplace-monolith.onrender.com"
 }
