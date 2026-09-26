@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "dev-marketplace-monolith": {
+      "command": "node",
+      "args": ["server.js"],
+      "env": {
+        "SERVER_URL": "https://chatgpt-marketplace-monolith.onrender.com"
+      }
+    }
+  }
+}
