@@ -1,10 +1,13 @@
 {
   "name": "chatgpt-marketplace-monolith",
   "version": "1.0.0",
-  "description": "Marketplace de plugins pour ChatGPT",
+  "description": "Marketplace pour ChatGPT incluant Headroom, claude-mem et Task Observer",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
+  },
+  "mcp": {
+    "server": "server.js"
   },
   "dependencies": {
     "express": "^4.19.2"
