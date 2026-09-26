@@ -4,84 +4,117 @@ app.use(express.json());
 
 const PORT = process.env.PORT || 3000;
 
+// Base de données temporaire en mémoire pour simuler la base à long terme de claude-mem
+// (Suffisant pour démarrer vos tests sur le plan gratuit !)
+const memoryDatabase = {};
+
 // ==========================================
-// 1. ROUTE DE SÉCURITÉ POUR UPTIMEROBOT (Ping)
+// ROUTE ANTI-SOMMEIL (Pour UptimeRobot)
 // ==========================================
 app.get('/health', (req, res) => {
-    // Cette route sert uniquement à dire à UptimeRobot que le serveur va bien
     res.status(200).json({ status: "allumé", timestamp: new Date() });
 });
 
 // ==========================================
-// 2. LOGIQUE LOGICIELLE (HEADROOM / OMNIROUTE)
+// 1. LOGIQUE RÉELLE : HEADROOM (Compression de code)
 // ==========================================
-
-// Fonction de compression (Inspirée de Headroom)
-function compressContext(text) {
-    if (!text) return "";
-    // Supprime les espaces multiples, les lignes vides et les commentaires de code basiques
-    return text
-        .replace(/\/\*[\s\S]*?\*\/|([^\\:]|^)\/\/.*\$/gm, '\$1') // Supprime commentaires // et /* */
-        .replace(/^\s*[\r\n]/gm, '')                         // Supprime les lignes vides
-        .replace(/[ \t]+/g, ' ')                             // Compresse les espaces multiples
-        .trim();
-}
-
-// Fonction de routage (Inspirée d'OmniRoute)
-async function routeToBestProvider(payload) {
-    // Dans une version finale, vous mettriez ici vos clés d'API (OpenRouter, Groq, etc.)
-    // Pour l'exemple, on simule une redirection vers un fournisseur gratuit
-    console.log("Routage OmniRoute actif vers le meilleur fournisseur...");
-    return {
-        message: "Contenu traité avec succès par le routeur OmniRoute."
-    };
+function executeHeadroom(code) {
+    if (!code) return "";
+    return code
+        // 1. Supprime les commentaires de bloc /* ... */
+        .replace(/\/\*[\s\S]*?\*\//g, '')
+        // 2. Supprime les commentaires de ligne // ...
+        .replace(/(^|[^\\])\/\/.*\$/gm, '\$1')
+        // 3. Supprime les lignes vides et les espaces inutiles en début/fin de ligne
+        .split('\n')
+        .map(line => line.trim())
+        .filter(line => line.length > 0)
+        .join('\n')
+        // 4. Remplace les espaces multiples par un seul espace
+        .replace(/[ \t]+/g, ' ');
 }
 
 // ==========================================
-// 3. PASSERELLE POUR LES ACTIONS CHATGPT
+// 2. LOGIQUE RÉELLE : CLAUDE-MEM (Gestion de la mémoire)
 // ==========================================
+function executeClaudeMem(userId, currentPrompt) {
+    if (!userId) userId = "default_user";
+    
+    // Récupère l'historique ou crée un tableau vide
+    if (!memoryDatabase[userId]) {
+        memoryDatabase[userId] = [];
+    }
+    
+    // Extrait le contexte passé pour l'injecter au modèle
+    const pastContext = memoryDatabase[userId].join(" | ");
+    
+    // Sauvegarde la requête actuelle dans la mémoire pour la prochaine fois (limité aux 5 derniers faits importants)
+    if (currentPrompt.length > 10) {
+        memoryDatabase[userId].push(currentPrompt);
+        if (memoryDatabase[userId].length > 5) memoryDatabase[userId].shift();
+    }
+    
+    return pastContext;
+}
 
-// Point d'entrée (Endpoint) que ChatGPT va appeler
+// ==========================================
+// 3. LOGIQUE RÉELLE : TASK OBSERVER (Ajustement du style de réponse)
+// ==========================================
+function executeTaskObserver(userStylePreference) {
+    // Si l'utilisateur a défini des préférences de style (ex: "soit concis", "inclus des commentaires")
+    // On force l'I.A. à adopter ce comportement exact.
+    if (!userStylePreference) return "Adopte un style de développeur senior, propre et documenté.";
+    return `Respecte strictement ces préférences de style apprises de l'utilisateur : ${userStylePreference}`;
+}
+
+// ==========================================
+// 4. PASSERELLE PRINCIPALE POUR CHATGPT (Endpoint unique)
+// ==========================================
 app.post('/api/v1/execute', async (req, res) => {
     try {
-        const { prompt, codeInput } = req.body;
+        const { userId, prompt, codeInput, userStyle } = req.body;
 
         if (!prompt) {
             return res.status(400).json({ error: "Le champ 'prompt' est requis." });
         }
 
-        // Étape Headroom : Compression des données d'entrée pour économiser les tokens
-        const compressedCode = compressContext(codeInput || "");
-        
-        console.log(`[Headroom] Code compressé. Taille réduite.`);
+        // Exécution des modules les uns après les autres
+        const compressedCode = executeHeadroom(codeInput || "");
+        const memories = executeClaudeMem(userId, prompt);
+        const styleInstructions = executeTaskObserver(userStyle);
 
-        // Étape Task Observer / claude-mem : Structure du prompt final
-        const finalPrompt = `
-        [Style utilisateur appliqué]
-        Prompt: ${prompt}
-        Code à analyser (optimisé par Headroom): 
-        ${compressedCode}
+        // Préparation de la réponse finale structurée que ChatGPT va analyser
+        // Étape OmniRoute : On structure la requête pour que ChatGPT ou un routeur d'API tiers la traite
+        const finalInstructionsPourChatGPT = `
+        [CONTEXTE DE MÉMOIRE (claude-mem)] : ${memories || "Aucun historique disponible."}
+        [STYLE APPRIS (Task Observer)] : ${styleInstructions}
+        [CODE OPTIMISÉ (Headroom)] : 
+        ${compressedCode || "Aucun code fourni."}
         `;
 
-        // Étape OmniRoute : Appel de l'I.A. en arrière-plan
-        // Pour cet exemple, on renvoie directement la structure propre à ChatGPT
+        // Calcul des gains de tokens pour le rapport
+        const originalLength = (codeInput || "").length;
+        const compressedLength = compressedCode.length;
+        const economy = originalLength > 0 ? Math.round(((originalLength - compressedLength) / originalLength) * 100) : 0;
+
+        // On renvoie le résultat propre
         res.status(200).json({
             success: true,
-            processedPrompt: finalPrompt,
-            savingReport: {
-                originalLength: (codeInput || "").length,
-                compressedLength: compressedCode.length,
-                tokensSaved: "Estimation ~40%"
+            instructions: finalInstructionsPourChatGPT,
+            userPrompt: prompt,
+            report: {
+                tokensSavedPercent: `${economy}%`,
+                status: "Optimisé par votre Marketplace"
             }
         });
 
     } catch (error) {
         console.error(error);
-        res.status(500).json({ error: "Erreur interne du serveur de la Marketplace." });
+        res.status(500).json({ error: "Erreur lors de l'exécution des plugins." });
     }
 });
 
-// Lancement du serveur
+// Lancement de l'application
 app.listen(PORT, () => {
-    console.log(`Serveur Marketplace démarré sur le port ${PORT}`);
+    console.log(`Félicitations ! Votre Marketplace centralisée tourne sur le port ${PORT}`);
 });
